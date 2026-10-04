@@ -1,0 +1,141 @@
+// Prisma schema for Daily Work Tracker & Productivity Analytics
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RecurrenceType {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  CUSTOM_DAYS
+}
+
+model Task {
+  id                String          @id @default(cuid())
+  title             String          @db.VarChar(255)
+  description       String?         @db.Text
+  date              String          @db.VarChar(10) // "YYYY-MM-DD" local calendar date
+  startTime         String?         @db.VarChar(5)  // "HH:mm" (24-hour)
+  endTime           String?         @db.VarChar(5)  // "HH:mm" (24-hour)
+  actualStartTime   DateTime?
+  actualEndTime     DateTime?
+  status            Status          @default(TODO)
+  priority          Priority        @default(MEDIUM)
+  categoryId        String?
+  category          Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags              TaskTag[]
+  estimatedDuration Int             @default(0)     // in minutes
+  actualDuration    Int             @default(0)     // in minutes (calculated sum of work sessions)
+  
+  // Recurrence
+  isRecurring       Boolean         @default(false)
+  recurrenceType    RecurrenceType  @default(NONE)
+  recurrenceDays    String?         // Comma-separated: "MON,WED,FRI" or null
+  
+  // Work Sessions
+  workSessions      WorkSession[]
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  completedAt       DateTime?
+
+  @@index([date])
+  @@index([status])
+  @@index([priority])
+  @@index([categoryId])
+}
+
+model WorkSession {
+  id        String    @id @default(cuid())
+  taskId    String
+  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  startTime DateTime  @default(now())
+  endTime   DateTime?
+  duration  Int       @default(0) // in minutes
+  notes     String?   @db.VarChar(255)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([taskId])
+  @@index([startTime])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique @db.VarChar(50)
+  color     String   @default("#6366f1") @db.VarChar(20)
+  icon      String?  @default("Folder") @db.VarChar(30)
+  tasks     Task[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique @db.VarChar(50)
+  color     String    @default("#94a3b8") @db.VarChar(20)
+  tasks     TaskTag[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model TaskTag {
+  taskId String
+  tagId  String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@index([tagId])
+}
+
+model DailyReview {
+  id               String   @id @default(cuid())
+  date             String   @unique @db.VarChar(10) // "YYYY-MM-DD"
+  rating           Int      @default(3) // 1-5 rating
+  completedCount   Int      @default(0)
+  plannedHours     Float    @default(0.0)
+  actualHours      Float    @default(0.0)
+  whatWentWell     String?  @db.Text
+  whatToImprove    String?  @db.Text
+  tomorrowPriority String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([date])
+}
+
+model UserSettings {
+  id                   String   @id @default("default")
+  theme                String   @default("system")
+  compactMode          Boolean  @default(false)
+  defaultTaskDuration  Int      @default(60) // minutes
+  workingHoursStart    String   @default("09:00")
+  workingHoursEnd      String   @default("18:00")
+  weekStartsOn         Int      @default(1) // 0=Sunday, 1=Monday
+  defaultCalendarView  String   @default("week")
+  enableNotifications  Boolean  @default(true)
+  reminderMinutes      Int      @default(10)
+  updatedAt            DateTime @updatedAt
+}
