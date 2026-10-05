@@ -12,6 +12,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { CategoriesPage } from './pages/CategoriesPage';
+import { CoursesPage } from './pages/CoursesPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
                 <Route path="today" element={<TodayPage />} />
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="tasks" element={<TasksPage />} />
+                <Route path="courses" element={<CoursesPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
                 <Route path="insights" element={<InsightsPage />} />
                 <Route path="reviews" element={<ReviewPage />} />

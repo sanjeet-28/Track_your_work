@@ -58,7 +58,7 @@ export function QuickAddTaskBar({ defaultDate }) {
         </div>
         <input
           type="text"
-          placeholder="Quick add: 'DSA practice tomorrow 7 PM - 9 PM !high #leetcode'..."
+          placeholder="Quick add: 'COL333 lec 4 tomorrow 10 AM - 11 AM' or 'ELL205 tut 1'..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onFocus={() => setIsFocused(true)}

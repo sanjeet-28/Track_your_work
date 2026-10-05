@@ -70,6 +70,17 @@ export const reviewApi = {
   getWeeklyReview: (startDate) => api.get(`/reviews/weekly/${startDate || ''}`)
 };
 
+export const courseApi = {
+  getAll: () => api.get('/courses'),
+  getById: (id) => api.get(`/courses/${id}`),
+  create: (data) => api.post('/courses', data),
+  update: (id, data) => api.put(`/courses/${id}`, data),
+  delete: (id, deleteTasks = false) => api.delete(`/courses/${id}`, { params: { deleteTasks } }),
+  getHeatmap: (id, days = 90) => api.get(`/courses/${id}/heatmap`, { params: { days } }),
+  getDailyBreakdown: (date) => api.get('/courses/analytics/daily', { params: { date } }),
+  getOverview: () => api.get('/courses/analytics/overview')
+};
+
 export const settingsApi = {
   getSettings: () => api.get('/settings'),
   updateSettings: (data) => api.put('/settings', data)

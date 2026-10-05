@@ -82,6 +82,23 @@ export function TaskCard({ task, onDragStart }) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
+            {task.course && (
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold tracking-tight shadow-2xs"
+                style={{
+                  backgroundColor: `${task.course.color}20`,
+                  color: task.course.color,
+                  border: `1px solid ${task.course.color}40`
+                }}
+              >
+                {task.course.code}
+              </span>
+            )}
+            {task.taskType && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60">
+                {task.taskType}
+              </span>
+            )}
             {task.category && <CategoryBadge category={task.category} size="xs" />}
             <PriorityBadge priority={task.priority} size="xs" />
             

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Square, Play, HelpCircle, Bell } from 'lucide-react';
+import { Search, Plus, Square } from 'lucide-react';
 import { useTasks } from '../../context/TaskContext';
 import { useTimer } from '../../context/TimerContext';
 import { formatSecondsToTimer } from '../../utils/dateFormats';
 import { Button } from '../common/Button';
 
-export function Topbar({ onOpenShortcuts }) {
+export function Topbar() {
   const { filters, setFilters, openTaskModal } = useTasks();
   const { activeSession, activeTask, elapsedSeconds, stopTimer } = useTimer();
   const [greeting, setGreeting] = useState('');
@@ -52,14 +52,11 @@ export function Topbar({ onOpenShortcuts }) {
           <input
             id="global-search-input"
             type="text"
-            placeholder="Search tasks, categories, tags... (Press /)"
+            placeholder="Search tasks, categories, tags..."
             value={filters.search || ''}
             onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            className="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none transition-all"
+            className="w-full pl-9 pr-4 py-1.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none transition-all"
           />
-          <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono pointer-events-none">
-            /
-          </kbd>
         </div>
       </div>
 
@@ -92,16 +89,6 @@ export function Topbar({ onOpenShortcuts }) {
           </div>
         )}
 
-        {/* Shortcuts Help */}
-        <button
-          type="button"
-          onClick={onOpenShortcuts}
-          className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          title="Keyboard Shortcuts (?)"
-        >
-          <HelpCircle className="w-5 h-5" />
-        </button>
-
         {/* Add Work Button */}
         <Button
           onClick={() => openTaskModal()}
@@ -111,9 +98,6 @@ export function Topbar({ onOpenShortcuts }) {
           className="shadow-sm shadow-indigo-500/20"
         >
           <span>Add Work</span>
-          <kbd className="hidden sm:inline-block ml-1 text-[10px] bg-indigo-700/50 px-1 py-0.2 rounded font-mono">
-            N
-          </kbd>
         </Button>
       </div>
     </header>

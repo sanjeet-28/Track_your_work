@@ -6,6 +6,8 @@ import { HeatmapGrid } from '../components/analytics/HeatmapGrid';
 import { DailyCompletionChart } from '../components/analytics/DailyCompletionChart';
 import { PlannedVsActualChart } from '../components/analytics/PlannedVsActualChart';
 import { CategoryBreakdownChart } from '../components/analytics/CategoryBreakdownChart';
+import { DailyCourseBarGraph } from '../components/analytics/DailyCourseBarGraph';
+import { CourseHeatmapSection } from '../components/analytics/CourseHeatmapSection';
 import { StatCard } from '../components/dashboard/StatCard';
 
 export function AnalyticsPage() {
@@ -60,7 +62,13 @@ export function AnalyticsPage() {
       {/* Productivity Score */}
       <ProductivityScoreCard scoreData={scoreData} />
 
-      {/* GitHub-style Heatmap */}
+      {/* Daily Course Bar Graph */}
+      <DailyCourseBarGraph />
+
+      {/* Course Productivity Heatmaps & Tracking */}
+      <CourseHeatmapSection />
+
+      {/* GitHub-style Overall Work Heatmap */}
       <HeatmapGrid heatmapData={heatmapData} />
 
       {/* Visual Charts Grid: Daily Completion & Planned vs Actual */}

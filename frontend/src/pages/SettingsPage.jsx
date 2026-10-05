@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Download, Sun, Moon, Monitor, Sliders, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, Download, Sun, Moon, Monitor, Sliders, AlertCircle, RefreshCw } from 'lucide-react';
 import { settingsApi } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { useTasks } from '../context/TaskContext';
@@ -9,19 +9,8 @@ export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { showToast } = useTasks();
 
-  const [settings, setSettings] = useState({
-    defaultTaskDuration: 60,
-    workingHoursStart: '09:00',
-    workingHoursEnd: '18:00',
-    weekStartsOn: 1,
-    defaultCalendarView: 'week',
-    enableNotifications: true,
-    reminderMinutes: 10
-  });
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [saving, setSaving] = useState(false);
   const [downloadingJson, setDownloadingJson] = useState(false);
   const [downloadingCsv, setDownloadingCsv] = useState(false);
 
@@ -30,11 +19,8 @@ export function SettingsPage() {
       setLoading(true);
       setError(null);
       const res = await settingsApi.getSettings();
-      if (res.data) {
-        setSettings((prev) => ({ ...prev, ...res.data }));
-        if (res.data.theme && res.data.theme !== theme) {
-          setTheme(res.data.theme);
-        }
+      if (res.data && res.data.theme && res.data.theme !== theme) {
+        setTheme(res.data.theme);
       }
     } catch (err) {
       console.error('Failed to load settings:', err);
@@ -47,19 +33,6 @@ export function SettingsPage() {
   useEffect(() => {
     fetchSettings();
   }, []);
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await settingsApi.updateSettings({ ...settings, theme });
-      showToast('Settings saved successfully');
-    } catch (err) {
-      showToast(err.message || 'Failed to save settings', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleDownload = (format) => {
     if (format === 'json') setDownloadingJson(true);
@@ -123,141 +96,85 @@ export function SettingsPage() {
         </div>
       )}
 
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* Appearance Section */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-            <Sliders className="w-4 h-4 text-indigo-500" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Appearance & Theme
-            </h3>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              Color Theme Mode
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => setTheme('light')}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
-                  theme === 'light'
-                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <Sun className="w-5 h-5 text-amber-500" />
-                <span>Light Mode</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setTheme('dark')}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
-                  theme === 'dark'
-                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <Moon className="w-5 h-5 text-indigo-400" />
-                <span>Dark Mode</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setTheme('system')}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
-                  theme === 'system' || theme === 'auto'
-                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                <Monitor className="w-5 h-5 text-slate-400" />
-                <span>System Auto</span>
-              </button>
-            </div>
-          </div>
+      {/* Appearance Section */}
+      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+        <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <Sliders className="w-4 h-4 text-indigo-500" />
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+            Appearance & Theme
+          </h3>
         </div>
 
-        {/* Productivity Schedule Settings */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-            <Clock className="w-4 h-4 text-indigo-500" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Productivity & Calendar Defaults
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Default Task Duration (Minutes)
-              </label>
-              <select
-                value={settings.defaultTaskDuration}
-                onChange={(e) =>
-                  setSettings({ ...settings, defaultTaskDuration: Number(e.target.value) })
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            Color Theme Mode
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={async () => {
+                setTheme('light');
+                try {
+                  await settingsApi.updateSettings({ theme: 'light' });
+                  showToast('Theme set to Light mode');
+                } catch (e) {
+                  console.error(e);
                 }
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-              >
-                <option value="30">30 minutes</option>
-                <option value="45">45 minutes</option>
-                <option value="60">60 minutes (1 hour)</option>
-                <option value="90">90 minutes (1.5 hours)</option>
-                <option value="120">120 minutes (2 hours)</option>
-              </select>
-            </div>
+              }}
+              className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
+                theme === 'light'
+                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
+                  : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Sun className="w-5 h-5 text-amber-500" />
+              <span>Light Mode</span>
+            </button>
 
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Week Starts On
-              </label>
-              <select
-                value={settings.weekStartsOn}
-                onChange={(e) =>
-                  setSettings({ ...settings, weekStartsOn: Number(e.target.value) })
+            <button
+              type="button"
+              onClick={async () => {
+                setTheme('dark');
+                try {
+                  await settingsApi.updateSettings({ theme: 'dark' });
+                  showToast('Theme set to Dark mode');
+                } catch (e) {
+                  console.error(e);
                 }
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-              >
-                <option value="1">Monday</option>
-                <option value="0">Sunday</option>
-              </select>
-            </div>
+              }}
+              className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
+                theme === 'dark'
+                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
+                  : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Moon className="w-5 h-5 text-indigo-400" />
+              <span>Dark Mode</span>
+            </button>
 
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Workday Start Hour
-              </label>
-              <input
-                type="time"
-                value={settings.workingHoursStart}
-                onChange={(e) => setSettings({ ...settings, workingHoursStart: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Workday End Hour
-              </label>
-              <input
-                type="time"
-                value={settings.workingHoursEnd}
-                onChange={(e) => setSettings({ ...settings, workingHoursEnd: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono"
-              />
-            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                setTheme('system');
+                try {
+                  await settingsApi.updateSettings({ theme: 'system' });
+                  showToast('Theme set to System Auto mode');
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
+              className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
+                theme === 'system' || theme === 'auto'
+                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
+                  : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Monitor className="w-5 h-5 text-slate-400" />
+              <span>System Auto</span>
+            </button>
           </div>
         </div>
-
-        {/* Save Settings Button */}
-        <div className="flex justify-end">
-          <Button type="submit" variant="primary" loading={saving}>
-            Save Preferences
-          </Button>
-        </div>
-      </form>
+      </div>
 
       {/* Data Export Section */}
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">

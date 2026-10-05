@@ -13,7 +13,6 @@ import { analyticsApi } from '../services/api';
 import { StatCard } from '../components/dashboard/StatCard';
 import { TodayProgressCard } from '../components/dashboard/TodayProgressCard';
 import { ActiveTaskHero } from '../components/dashboard/ActiveTaskHero';
-import { OverdueBanner } from '../components/dashboard/OverdueBanner';
 import { UpcomingList } from '../components/dashboard/UpcomingList';
 import { QuickAddTaskBar } from '../components/tasks/QuickAddTaskBar';
 import { TaskCard } from '../components/tasks/TaskCard';
@@ -53,9 +52,6 @@ export function DashboardPage() {
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
       {/* Quick Add Bar */}
       <QuickAddTaskBar defaultDate={today} />
-
-      {/* Overdue Items Alert */}
-      <OverdueBanner />
 
       {/* Hero Grid: Today's Progress Card + Active Task Hero */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
