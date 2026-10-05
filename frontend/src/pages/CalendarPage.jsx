@@ -3,7 +3,7 @@ import { QuickAddTaskBar } from '../components/tasks/QuickAddTaskBar';
 
 export function CalendarPage() {
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+    <div className="p-3 md:p-6 max-w-3xl mx-auto space-y-4 animate-in fade-in duration-200">
       {/* Quick Add Bar */}
       <QuickAddTaskBar />
 
