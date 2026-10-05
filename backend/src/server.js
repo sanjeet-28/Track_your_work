@@ -65,9 +65,16 @@ process.on('SIGTERM', async () => {
 });
 
 // Start listening if run directly
+// if (require.main === module) {
+//   app.listen(PORT, () => {
+//     console.log(`🚀 Work Tracker API Server running on http://localhost:${PORT}`);
+//     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+//   });
+// }
+
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`🚀 Work Tracker API Server running on http://localhost:${PORT}`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Work Tracker API Server running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   });
 }
