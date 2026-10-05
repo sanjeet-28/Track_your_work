@@ -136,6 +136,17 @@ async function runCalendarBannerTest() {
     const dur2 = calculateDuration('14:00', '16:00');
     assert(dur2 === '2h', `Duration calculation: 14:00 to 16:00 = "2h" (got: "${dur2}")`);
 
+    // 4b. Test Unusual / Overnight Range (e.g. 23:00 to 01:00 - saving without end-time restriction)
+    const overnightUpdate = await apiCall('PUT', `/api/tasks/${t3.body.data.id}`, {
+      startTime: '23:00',
+      endTime: '01:00'
+    });
+    assert(overnightUpdate.status === 200, 'Unusual/overnight range (23:00 - 01:00) saved successfully without validation error');
+    assert(overnightUpdate.body.data.startTime === '23:00' && overnightUpdate.body.data.endTime === '01:00', 'Overnight times verified in DB');
+
+    // Restore t3
+    await apiCall('PUT', `/api/tasks/${t3.body.data.id}`, { startTime: '14:00', endTime: '16:00' });
+
     // 5. Test Fetch and Partition by Date
     console.log('\n--- 3. Testing Fetch & Partition: Incomplete vs Completed ---');
     const getRes = await apiCall('GET', `/api/tasks?startDate=${testDate}&endDate=${testDate}`);

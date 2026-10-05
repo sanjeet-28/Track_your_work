@@ -164,16 +164,7 @@ async function createTask(data) {
     recurrenceDays
   } = data;
 
-  // Validate time ordering if both start and end time are provided
-  if (startTime && endTime) {
-    const [sH, sM] = startTime.split(':').map(Number);
-    const [eH, eM] = endTime.split(':').map(Number);
-    if (eH * 60 + eM < sH * 60 + sM) {
-      const error = new Error('End time cannot be earlier than start time');
-      error.statusCode = 400;
-      throw error;
-    }
-  }
+
 
   // Auto calculate duration if start & end time provided and not explicitly given
   let calculatedDuration = estimatedDuration !== undefined ? Number(estimatedDuration) : undefined;
@@ -359,15 +350,7 @@ async function updateTask(id, data) {
   const effectiveStart = startTime !== undefined ? startTime : existing.startTime;
   const effectiveEnd = endTime !== undefined ? endTime : existing.endTime;
 
-  if (effectiveStart && effectiveEnd) {
-    const [sH, sM] = effectiveStart.split(':').map(Number);
-    const [eH, eM] = effectiveEnd.split(':').map(Number);
-    if (eH * 60 + eM < sH * 60 + sM) {
-      const error = new Error('End time cannot be earlier than start time');
-      error.statusCode = 400;
-      throw error;
-    }
-  }
+
 
   if (estimatedDuration !== undefined) {
     updateData.estimatedDuration = Math.max(0, Number(estimatedDuration));

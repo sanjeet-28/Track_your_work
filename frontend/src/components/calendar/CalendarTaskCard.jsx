@@ -43,27 +43,14 @@ export function CalendarTaskCard({ task, onTimeUpdated }) {
   const handleTimeDoubleClick = (e) => {
     e.stopPropagation();
     setIsEditingTime(true);
-    setEditStartTime(task.startTime || '09:00');
-    setEditEndTime(task.endTime || '10:00');
+    setEditStartTime(task.startTime || '07:00');
+    setEditEndTime(task.endTime || '08:00');
     setTimeError('');
   };
 
   // Save inline time edit
   const handleSaveTime = async (e) => {
     if (e) e.stopPropagation();
-
-    // Validate: end time must be after start time
-    if (editStartTime && editEndTime) {
-      const [sh, sm] = editStartTime.split(':').map(Number);
-      const [eh, em] = editEndTime.split(':').map(Number);
-      const startMin = sh * 60 + sm;
-      const endMin = eh * 60 + em;
-
-      if (endMin <= startMin) {
-        setTimeError('End time must be after start time');
-        return;
-      }
-    }
 
     setSavingTime(true);
     try {

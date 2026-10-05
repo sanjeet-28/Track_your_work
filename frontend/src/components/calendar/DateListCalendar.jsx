@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Calendar, Plus, ChevronUp, ChevronDown, Sparkles, Clock, Target, Loader2 } from 'lucide-react';
 import { useTasks } from '../../context/TaskContext';
 import { taskApi } from '../../services/api';
-import { getTodayDateStr, addDays } from '../../utils/dateFormats';
+import { getTodayDateStr, addDays, getMinutesFrom7AM } from '../../utils/dateFormats';
 import { CalendarTaskCard } from './CalendarTaskCard';
+import { QuickAddTaskBar } from '../tasks/QuickAddTaskBar';
 
 /**
  * Format a YYYY-MM-DD string to "25 November 2026"
@@ -229,11 +230,14 @@ export function DateListCalendar() {
       if (a.startTime && !b.startTime) return -1;
       if (!a.startTime && b.startTime) return 1;
       if (a.startTime && b.startTime) {
-        const comp = a.startTime.localeCompare(b.startTime);
-        if (comp !== 0) return comp;
+        // Daily schedule starts at 7:00 AM
+        const offsetA = getMinutesFrom7AM(a.startTime);
+        const offsetB = getMinutesFrom7AM(b.startTime);
+        if (offsetA !== offsetB) return offsetA - offsetB;
         if (a.endTime && b.endTime) {
-          const endComp = a.endTime.localeCompare(b.endTime);
-          if (endComp !== 0) return endComp;
+          const endOffsetA = getMinutesFrom7AM(a.endTime);
+          const endOffsetB = getMinutesFrom7AM(b.endTime);
+          if (endOffsetA !== endOffsetB) return endOffsetA - endOffsetB;
         }
       }
       return (a.title || '').localeCompare(b.title || '');
@@ -300,26 +304,24 @@ export function DateListCalendar() {
   };
 
   return (
-    <div className="relative space-y-4">
-      {/* Top Sticky Control Bar */}
-      <div className="sticky top-16 z-20 flex items-center justify-between p-3 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-indigo-500" />
-          <div>
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              Timeline Calendar
-            </h2>
-            <p className="text-[11px] text-slate-400">
-              Scroll UP for future dates • Scroll DOWN for past dates • Today in center
-            </p>
-          </div>
+    <div className="space-y-4 w-full">
+      {/* 1. Very Top of Calendar Page: Timeline Calendar [Today] [Add Task] */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 gap-3">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <Calendar className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            Timeline Calendar
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Day starts at 7:00 AM • Scroll UP for future dates • Scroll DOWN for past dates
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={scrollToToday}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-800/50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-800/50"
             title="Jump to Today"
           >
             <Target className="w-3.5 h-3.5" />
@@ -328,17 +330,20 @@ export function DateListCalendar() {
 
           <button
             type="button"
-            onClick={() => openTaskModal(null, { date: todayStr })}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            onClick={() => openTaskModal(null, { date: todayStr, defaultTime: '07:00' })}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Add Task</span>
+            <span>Add Task</span>
           </button>
         </div>
       </div>
 
+      {/* Quick Add Bar */}
+      <QuickAddTaskBar />
+
       {/* Main Vertical Date-List Container */}
-      <div ref={containerRef} className="space-y-3">
+      <div ref={containerRef} className="space-y-3 w-full">
         {/* Top Button: Load next 10 future dates */}
         <div className="flex justify-center py-1">
           <button
@@ -404,7 +409,7 @@ export function DateListCalendar() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => openTaskModal(null, { date: item.dateStr })}
+                      onClick={() => openTaskModal(null, { date: item.dateStr, defaultTime: '07:00' })}
                       className="p-1 rounded text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       title={`Add task for ${full}`}
                     >

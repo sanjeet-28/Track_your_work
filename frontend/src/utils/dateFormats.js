@@ -93,9 +93,25 @@ export function calculateTimeDifference(startTime, endTime) {
   const [startH, startM] = startTime.split(':').map(Number);
   const [endH, endM] = endTime.split(':').map(Number);
   if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return null;
-  const diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
-  if (diffMinutes <= 0) return null;
+  let diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+  if (diffMinutes < 0) {
+    // Safely support overnight / unusual intervals (e.g., 23:00 to 01:00)
+    diffMinutes += 24 * 60;
+  }
+  if (diffMinutes === 0) return null;
   return formatDuration(diffMinutes);
+}
+
+/**
+ * Minute offset from 7:00 AM for schedule sorting.
+ * 7:00 AM is index 0. Evening hours follow naturally, and late night (12 AM - 6:59 AM) follows at end of day cycle.
+ */
+export function getMinutesFrom7AM(timeStr) {
+  if (!timeStr) return 9999;
+  const [h, m] = timeStr.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return 9999;
+  const total = h * 60 + m;
+  return total >= 420 ? total - 420 : total + 1020;
 }
 
 export function calculateDurationMinutes(startTime, endTime) {
