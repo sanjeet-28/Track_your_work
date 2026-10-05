@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { Calendar, Plus, ChevronUp, ChevronDown, Sparkles, Clock, Target } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Calendar, Plus, ChevronUp, ChevronDown, Sparkles, Clock, Target, Loader2 } from 'lucide-react';
 import { useTasks } from '../../context/TaskContext';
-import { getTodayDateStr } from '../../utils/dateFormats';
+import { taskApi } from '../../services/api';
+import { getTodayDateStr, addDays } from '../../utils/dateFormats';
 import { TaskCard } from '../tasks/TaskCard';
 
 /**
- * Format a YYYY-MM-DD string to "23 November 2026"
+ * Format a YYYY-MM-DD string to "25 November 2026"
  */
 function formatDateFull(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -23,93 +24,242 @@ function formatDateFull(dateStr) {
   };
 }
 
-/**
- * Converts Date object to local "YYYY-MM-DD"
- */
-function toDateStr(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 export function DateListCalendar() {
-  const { tasks, openTaskModal } = useTasks();
-  const [futureDaysCount, setFutureDaysCount] = useState(30);
-  const [pastDaysCount, setPastDaysCount] = useState(30);
+  const { tasks: contextTasks, openTaskModal } = useTasks();
+
+  // Date range state:
+  // Initially: 10 future days, today, 10 past days
+  const [futureDaysCount, setFutureDaysCount] = useState(10);
+  const [pastDaysCount, setPastDaysCount] = useState(10);
+
+  // Local task cache map: { [taskId]: task }
+  const [calendarTasksMap, setCalendarTasksMap] = useState({});
+
+  // Loading states
+  const [loadingFuture, setLoadingFuture] = useState(false);
+  const [loadingPast, setLoadingPast] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  // Set of dates already fetched to prevent duplicate network calls
+  const fetchedDatesSetRef = useRef(new Set());
 
   const todayStr = useMemo(() => getTodayDateStr(), []);
   const todayRef = useRef(null);
   const containerRef = useRef(null);
+  const hasCenteredTodayRef = useRef(false);
 
-  // Group tasks by date
-  const tasksByDate = useMemo(() => {
-    const map = {};
-    tasks.forEach((task) => {
-      if (!task.date) return;
-      if (!map[task.date]) map[task.date] = [];
-      map[task.date].push(task);
+  /**
+   * Fetch tasks for a specific date range and merge into calendarTasksMap
+   */
+  const fetchDateRangeTasks = useCallback(async (startDate, endDate) => {
+    try {
+      const res = await taskApi.getTasks({ startDate, endDate });
+      if (res.data) {
+        setCalendarTasksMap((prev) => {
+          const next = { ...prev };
+          res.data.forEach((task) => {
+            if (task && task.id) {
+              next[task.id] = task;
+            }
+          });
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error(`Failed to fetch tasks for range ${startDate} to ${endDate}:`, err);
+    }
+  }, []);
+
+  /**
+   * Initial load: past 10 days, today, future 10 days
+   */
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadInitial() {
+      const startDate = addDays(todayStr, -10);
+      const endDate = addDays(todayStr, 10);
+
+      // Mark all initial dates as fetched
+      for (let i = -10; i <= 10; i++) {
+        fetchedDatesSetRef.current.add(addDays(todayStr, i));
+      }
+
+      setInitialLoading(true);
+      await fetchDateRangeTasks(startDate, endDate);
+      if (isMounted) {
+        setInitialLoading(false);
+      }
+    }
+
+    loadInitial();
+    return () => {
+      isMounted = false;
+    };
+  }, [todayStr, fetchDateRangeTasks]);
+
+  /**
+   * Automatically scroll today into center/focus on mount
+   */
+  useEffect(() => {
+    if (!initialLoading && todayRef.current && !hasCenteredTodayRef.current) {
+      hasCenteredTodayRef.current = true;
+      todayRef.current.scrollIntoView({
+        behavior: 'auto',
+        block: 'center'
+      });
+    }
+  }, [initialLoading]);
+
+  /**
+   * Load next 10 future dates
+   * Range: from (futureDaysCount + 1) to (futureDaysCount + 10)
+   */
+  const handleLoadFuture = async () => {
+    if (loadingFuture) return;
+    setLoadingFuture(true);
+
+    const newStartOffset = futureDaysCount + 1;
+    const newEndOffset = futureDaysCount + 10;
+    const startDate = addDays(todayStr, newStartOffset);
+    const endDate = addDays(todayStr, newEndOffset);
+
+    // Record scroll metrics before prepending to prevent visual jumping
+    const container = containerRef.current || document.documentElement;
+    const prevScrollHeight = container.scrollHeight;
+    const prevScrollTop = container.scrollTop || window.scrollY;
+
+    // Mark dates as fetched
+    for (let i = newStartOffset; i <= newEndOffset; i++) {
+      fetchedDatesSetRef.current.add(addDays(todayStr, i));
+    }
+
+    await fetchDateRangeTasks(startDate, endDate);
+
+    setFutureDaysCount((prev) => prev + 10);
+    setLoadingFuture(false);
+
+    // Smoothly maintain scroll position after DOM prepend
+    requestAnimationFrame(() => {
+      const newScrollHeight = container.scrollHeight;
+      const heightDifference = newScrollHeight - prevScrollHeight;
+      if (heightDifference > 0) {
+        if (containerRef.current) {
+          containerRef.current.scrollTop = prevScrollTop + heightDifference;
+        } else {
+          window.scrollTo(0, prevScrollTop + heightDifference);
+        }
+      }
     });
+  };
+
+  /**
+   * Load next 10 past dates
+   * Range: from -(pastDaysCount + 10) to -(pastDaysCount + 1)
+   */
+  const handleLoadPast = async () => {
+    if (loadingPast) return;
+    setLoadingPast(true);
+
+    const newStartOffset = pastDaysCount + 1;
+    const newEndOffset = pastDaysCount + 10;
+    const startDate = addDays(todayStr, -newEndOffset);
+    const endDate = addDays(todayStr, -newStartOffset);
+
+    // Mark dates as fetched
+    for (let i = newStartOffset; i <= newEndOffset; i++) {
+      fetchedDatesSetRef.current.add(addDays(todayStr, -i));
+    }
+
+    await fetchDateRangeTasks(startDate, endDate);
+
+    setPastDaysCount((prev) => prev + 10);
+    setLoadingPast(false);
+  };
+
+  /**
+   * Merge local range tasks with context tasks to stay 100% reactive to mutations
+   * (e.g. create, update, delete, status toggle, reschedule)
+   */
+  const effectiveTasksMap = useMemo(() => {
+    const map = { ...calendarTasksMap };
+    // Synchronize with any task changes from TaskContext
+    if (Array.isArray(contextTasks)) {
+      contextTasks.forEach((task) => {
+        if (task && task.id) {
+          // If task exists in calendar or falls within the loaded date range
+          map[task.id] = task;
+        }
+      });
+    }
     return map;
-  }, [tasks]);
+  }, [calendarTasksMap, contextTasks]);
 
-  // Construct dates list:
-  // Upcoming dates are ABOVE the current date (scrolling UP moves further into the future).
-  // Current date is in the middle.
-  // Past dates are BELOW the current date (scrolling DOWN moves further into the past).
-  const dates = useMemo(() => {
+  /**
+   * Group tasks by local date string YYYY-MM-DD
+   */
+  const tasksByDate = useMemo(() => {
+    const grouped = {};
+    Object.values(effectiveTasksMap).forEach((task) => {
+      if (!task || !task.date) return;
+      if (!grouped[task.date]) grouped[task.date] = [];
+      grouped[task.date].push(task);
+    });
+
+    // Sort tasks on each date by startTime asc
+    Object.keys(grouped).forEach((dateKey) => {
+      grouped[dateKey].sort((a, b) => {
+        if (!a.startTime && !b.startTime) return 0;
+        if (!a.startTime) return 1;
+        if (!b.startTime) return -1;
+        return a.startTime.localeCompare(b.startTime);
+      });
+    });
+
+    return grouped;
+  }, [effectiveTasksMap]);
+
+  /**
+   * Construct vertical date list:
+   * 1. Future dates: from +futureDaysCount down to +1 (UP is future)
+   * 2. Today: 0 (MIDDLE, in focus)
+   * 3. Past dates: from -1 down to -pastDaysCount (DOWN is past)
+   */
+  const dateList = useMemo(() => {
     const list = [];
-    const today = new Date();
 
-    // 1. Future dates: from furthest future (+futureDaysCount) down to +1
+    // 1. Future dates: furthest upcoming at the top down to +1
     for (let i = futureDaysCount; i >= 1; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      const str = toDateStr(d);
+      const dateStr = addDays(todayStr, i);
       list.push({
-        dateStr: str,
+        dateStr,
         isToday: false,
         isFuture: true,
-        daysDiff: i
+        daysOffset: i
       });
     }
 
-    // 2. Today: current date
+    // 2. Today: current date in center
     list.push({
       dateStr: todayStr,
       isToday: true,
       isFuture: false,
-      daysDiff: 0
+      daysOffset: 0
     });
 
-    // 3. Past dates: from -1 down to furthest past (-pastDaysCount)
-    for (let i = 1; i <= pastDaysCount; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const str = toDateStr(d);
+    // 3. Past dates: -1 down to furthest past
+    for (let i = 1; i <= pastDaysCount; i++) {
+      const dateStr = addDays(todayStr, -i);
       list.push({
-        dateStr: str,
+        dateStr,
         isToday: false,
         isFuture: false,
-        daysDiff: -i
+        daysOffset: -i
       });
     }
 
     return list;
   }, [futureDaysCount, pastDaysCount, todayStr]);
-
-  // Center on current date when Calendar opens
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (todayRef.current) {
-        todayRef.current.scrollIntoView({
-          behavior: 'auto',
-          block: 'center'
-        });
-      }
-    }, 50);
-    return () => clearTimeout(timer);
-  }, []);
 
   const scrollToToday = () => {
     if (todayRef.current) {
@@ -122,7 +272,7 @@ export function DateListCalendar() {
 
   return (
     <div className="relative space-y-4">
-      {/* Top Floating / Sticky Control Bar */}
+      {/* Top Sticky Control Bar */}
       <div className="sticky top-16 z-20 flex items-center justify-between p-3 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div className="flex items-center gap-2">
           <Calendar className="w-5 h-5 text-indigo-500" />
@@ -131,7 +281,7 @@ export function DateListCalendar() {
               Timeline Calendar
             </h2>
             <p className="text-[11px] text-slate-400">
-              Vertical chronological stream • Scroll up for future, scroll down for past
+              Scroll UP for future dates • Scroll DOWN for past dates • Today in center
             </p>
           </div>
         </div>
@@ -141,7 +291,7 @@ export function DateListCalendar() {
             type="button"
             onClick={scrollToToday}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-800/50"
-            title="Focus current date"
+            title="Jump to Today"
           >
             <Target className="w-3.5 h-3.5" />
             <span>Today</span>
@@ -160,21 +310,26 @@ export function DateListCalendar() {
 
       {/* Main Vertical Date-List Container */}
       <div ref={containerRef} className="space-y-4">
-        {/* Top Button: Load next 20 future dates */}
+        {/* Top Button: Load next 10 future dates */}
         <div className="flex justify-center py-2">
           <button
             type="button"
-            onClick={() => setFutureDaysCount((prev) => prev + 20)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-xs font-bold transition-all shadow-xs cursor-pointer group"
+            disabled={loadingFuture}
+            onClick={handleLoadFuture}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50 group"
           >
-            <ChevronUp className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
-            <span>Load next 20</span>
+            {loadingFuture ? (
+              <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+            ) : (
+              <ChevronUp className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
+            )}
+            <span>Load next 10</span>
           </button>
         </div>
 
         {/* Date Items Stream */}
         <div className="space-y-4">
-          {dates.map((item) => {
+          {dateList.map((item) => {
             const dateTasks = tasksByDate[item.dateStr] || [];
             const { full, weekday } = formatDateFull(item.dateStr);
 
@@ -231,7 +386,7 @@ export function DateListCalendar() {
                 {dateTasks.length === 0 ? (
                   <div className="py-3 px-4 rounded-xl bg-slate-50/60 dark:bg-slate-800/30 border border-dashed border-slate-200 dark:border-slate-800 text-center">
                     <p className="text-xs italic text-slate-400 dark:text-slate-500">
-                      No work
+                      No work scheduled
                     </p>
                   </div>
                 ) : (
@@ -246,15 +401,20 @@ export function DateListCalendar() {
           })}
         </div>
 
-        {/* Bottom Button: Load next 20 previous dates */}
+        {/* Bottom Button: Load next 10 previous dates */}
         <div className="flex justify-center py-4">
           <button
             type="button"
-            onClick={() => setPastDaysCount((prev) => prev + 20)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-xs font-bold transition-all shadow-xs cursor-pointer group"
+            disabled={loadingPast}
+            onClick={handleLoadPast}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50 group"
           >
-            <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
-            <span>Load next 20</span>
+            {loadingPast ? (
+              <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+            ) : (
+              <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
+            )}
+            <span>Load next 10</span>
           </button>
         </div>
       </div>
