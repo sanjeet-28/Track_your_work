@@ -88,10 +88,7 @@ async function getTasks(filters = {}) {
   }
 
   if (search) {
-    where.OR = [
-      { title: { contains: search } },
-      { description: { contains: search } }
-    ];
+    where.title = { contains: search };
   }
 
   const orderBy = [];
@@ -152,7 +149,6 @@ async function getTaskById(id) {
 async function createTask(data) {
   const {
     title,
-    description,
     date = getTodayDateStr(),
     startTime,
     endTime,
@@ -249,7 +245,6 @@ async function createTask(data) {
   const task = await prisma.task.create({
     data: {
       title: title.trim(),
-      description: description ? description.trim() : null,
       date,
       startTime: startTime || null,
       endTime: endTime || null,
@@ -281,7 +276,6 @@ async function updateTask(id, data) {
 
   const {
     title,
-    description,
     date,
     startTime,
     endTime,
@@ -334,7 +328,6 @@ async function updateTask(id, data) {
     updateData.taskType = taskType || null;
   }
 
-  if (description !== undefined) updateData.description = description ? description.trim() : null;
   if (date !== undefined) updateData.date = date;
   if (startTime !== undefined) updateData.startTime = startTime || null;
   if (endTime !== undefined) updateData.endTime = endTime || null;
@@ -506,7 +499,6 @@ async function duplicateTask(id, targetDate) {
   const newTask = await prisma.task.create({
     data: {
       title: `${original.title} (Copy)`,
-      description: original.description,
       date: targetDate || original.date,
       startTime: original.startTime,
       endTime: original.endTime,

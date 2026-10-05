@@ -51,7 +51,6 @@ async function runAudit() {
   const today = '2026-10-05';
   const newTask = await request('POST', '/api/tasks', {
     title: 'Audit Verification Work Item',
-    description: 'Verifying end-to-end task flow',
     date: today,
     startTime: '13:00',
     endTime: '14:30',

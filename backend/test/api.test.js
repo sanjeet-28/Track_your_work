@@ -61,7 +61,6 @@ async function runTests() {
     console.log('\nTest 1: Create Task');
     const createRes = await request('POST', '/api/tasks', {
       title: 'Automated Test Task: Build Verification',
-      description: 'Testing task creation endpoint',
       date: '2026-10-05',
       startTime: '10:00',
       endTime: '11:30',

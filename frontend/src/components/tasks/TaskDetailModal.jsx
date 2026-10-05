@@ -105,18 +105,11 @@ export function TaskDetailModal() {
           </div>
         </div>
 
-        {/* Title & Description */}
+        {/* Title */}
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
             {task.title}
           </h2>
-          {task.description ? (
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-              {task.description}
-            </p>
-          ) : (
-            <p className="mt-1 text-xs text-slate-400 italic">No description provided.</p>
-          )}
         </div>
 
         {/* Scheduled Time & Planned vs Actual Grid */}

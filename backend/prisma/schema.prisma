@@ -34,7 +34,6 @@ enum RecurrenceType {
 model Task {
   id                String          @id @default(cuid())
   title             String          @db.VarChar(255)
-  description       String?         @db.Text
   date              String          @db.VarChar(10) // "YYYY-MM-DD" local calendar date
   startTime         String?         @db.VarChar(5)  // "HH:mm" (24-hour)
   endTime           String?         @db.VarChar(5)  // "HH:mm" (24-hour)

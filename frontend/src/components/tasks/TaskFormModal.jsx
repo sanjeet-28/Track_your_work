@@ -10,7 +10,6 @@ export function TaskFormModal() {
 
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
     date: '',
     startTime: '',
     endTime: '',
@@ -29,7 +28,6 @@ export function TaskFormModal() {
     if (task) {
       setFormData({
         title: task.title || '',
-        description: task.description || '',
         date: task.date || defaultDate || getTodayDateStr(),
         startTime: task.startTime || '',
         endTime: task.endTime || '',
@@ -43,7 +41,6 @@ export function TaskFormModal() {
     } else {
       setFormData({
         title: '',
-        description: '',
         date: defaultDate || getTodayDateStr(),
         startTime: defaultTime || '',
         endTime: '',
@@ -109,7 +106,6 @@ export function TaskFormModal() {
 
       const payload = {
         title: formData.title.trim(),
-        description: formData.description.trim() || null,
         date: formData.date,
         startTime: formData.startTime || null,
         endTime: formData.endTime || null,
@@ -162,20 +158,6 @@ export function TaskFormModal() {
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-            Description
-          </label>
-          <textarea
-            rows={3}
-            placeholder="Add relevant notes, checklist items, links or objectives..."
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
           />
         </div>
 

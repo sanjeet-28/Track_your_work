@@ -123,12 +123,6 @@ export function TaskCard({ task, onDragStart }) {
             {task.title}
           </h4>
 
-          {task.description && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
-              {task.description}
-            </p>
-          )}
-
           {/* Time & Duration row */}
           <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
             {task.startTime && (

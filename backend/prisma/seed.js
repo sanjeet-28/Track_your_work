@@ -84,7 +84,6 @@ async function seed() {
       // Past days (for analytics, completion rate, heatmap)
       {
         title: 'Graph Traversal Algorithms practice',
-        description: 'Implement BFS & DFS on directed graph cycle detection',
         date: getDateStr(-2),
         startTime: '09:30',
         endTime: '11:30',
@@ -101,7 +100,6 @@ async function seed() {
       },
       {
         title: 'Backend API authentication refactor',
-        description: 'Audit JWT session expiration and token refresh handling',
         date: getDateStr(-2),
         startTime: '14:00',
         endTime: '16:00',
@@ -119,7 +117,6 @@ async function seed() {
       },
       {
         title: 'Operating Systems chapter 4 summary',
-        description: 'Read virtual memory management and paging tables',
         date: getDateStr(-1),
         startTime: '10:00',
         endTime: '12:00',
@@ -136,7 +133,6 @@ async function seed() {
       },
       {
         title: 'Read Transformer Architecture paper',
-        description: 'Attention Is All You Need key equations and multi-head attention',
         date: getDateStr(-1),
         startTime: '15:00',
         endTime: '16:30',
@@ -155,7 +151,6 @@ async function seed() {
       // Today's tasks (rich interactive set)
       {
         title: 'DSA Practice: Dynamic Programming Patterns',
-        description: 'Solve 2 Knapsack variants and 1 LCS problem on LeetCode',
         date: getDateStr(0),
         startTime: '09:00',
         endTime: '10:30',
@@ -172,7 +167,6 @@ async function seed() {
       },
       {
         title: 'Database Assignment: Normalization & Indexing',
-        description: 'Complete 3NF decomposition proofs and query execution plan analysis',
         date: getDateStr(0),
         startTime: '11:00',
         endTime: '12:30',
@@ -189,7 +183,6 @@ async function seed() {
       },
       {
         title: 'Machine Learning Experiment: Fine-tuning BERT',
-        description: 'Run parameter sweep for learning rates 2e-5 vs 5e-5 on classification dataset',
         date: getDateStr(0),
         startTime: '14:00',
         endTime: '15:30',
@@ -206,7 +199,6 @@ async function seed() {
       },
       {
         title: 'Project Architecture: Daily Work Tracker REST API',
-        description: 'Build backend routes, controllers, and database services with Prisma',
         date: getDateStr(0),
         startTime: '16:00',
         endTime: '18:00',
@@ -219,7 +211,6 @@ async function seed() {
       },
       {
         title: 'Evening Workout & Cardio',
-        description: '45 mins upper body workout + 15 mins treadmill',
         date: getDateStr(0),
         startTime: '19:00',
         endTime: '20:00',
@@ -234,7 +225,6 @@ async function seed() {
       // Overdue task (for overdue testing)
       {
         title: 'Submit Internship Weekly Reflection Report',
-        description: 'Fill out mentor review sheet and submit to portal',
         date: getDateStr(-1),
         startTime: '17:00',
         endTime: '18:00',
@@ -249,7 +239,6 @@ async function seed() {
       // Upcoming days
       {
         title: 'System Design: Distributed Rate Limiter',
-        description: 'Study Token Bucket vs Leaky Bucket and Redis sliding window counter',
         date: getDateStr(1),
         startTime: '10:00',
         endTime: '12:00',
@@ -262,7 +251,6 @@ async function seed() {
       },
       {
         title: 'Linear Algebra Review: SVD and Eigenvalues',
-        description: 'Prepare for midterm exam next week',
         date: getDateStr(1),
         startTime: '15:00',
         endTime: '17:00',
@@ -275,7 +263,6 @@ async function seed() {
       },
       {
         title: 'Mock Technical Interview Session',
-        description: 'Peer coding interview focusing on Trees and DP',
         date: getDateStr(2),
         startTime: '16:00',
         endTime: '17:30',
