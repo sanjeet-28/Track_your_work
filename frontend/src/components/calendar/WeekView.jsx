@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useTasks } from '../../context/TaskContext';
-import { getWeekDays, formatTime12h, getTodayDateStr } from '../../utils/dateFormats';
+import { getWeekDays, formatTime12h, getTodayDateStr, toDateStr } from '../../utils/dateFormats';
 import { PriorityBadge } from '../common/Badge';
 
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6); // 6 AM to 11 PM (23:00)
@@ -8,7 +8,7 @@ const HOUR_HEIGHT = 64; // px per hour
 
 export function WeekView({ currentDate, onDropTask }) {
   const { tasks, openTaskModal, openDetailModal, updateTask } = useTasks();
-  const currentStr = currentDate.toISOString().split('T')[0];
+  const currentStr = toDateStr(currentDate);
   const weekDays = getWeekDays(currentStr, 1);
   const today = getTodayDateStr();
 

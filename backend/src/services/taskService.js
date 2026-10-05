@@ -150,19 +150,39 @@ async function createTask(data) {
     recurrenceDays
   } = data;
 
+  // Validate time ordering if both start and end time are provided
+  if (startTime && endTime) {
+    const [sH, sM] = startTime.split(':').map(Number);
+    const [eH, eM] = endTime.split(':').map(Number);
+    if (eH * 60 + eM < sH * 60 + sM) {
+      const error = new Error('End time cannot be earlier than start time');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
   // Auto calculate duration if start & end time provided and not explicitly given
-  let calculatedDuration = estimatedDuration;
+  let calculatedDuration = estimatedDuration !== undefined ? Number(estimatedDuration) : undefined;
   if (calculatedDuration === undefined && startTime && endTime) {
     calculatedDuration = calculateDurationMinutes(startTime, endTime);
   }
 
-  // Connect or create tags
+  // Verify category if provided
+  let validCategoryId = null;
+  if (categoryId && typeof categoryId === 'string' && categoryId.trim()) {
+    const cat = await prisma.category.findUnique({ where: { id: categoryId.trim() } });
+    if (cat) validCategoryId = cat.id;
+  }
+
+  // Connect or create tags (deduplicated)
   const taskTagCreates = [];
+  const processedTagNames = new Set();
   if (Array.isArray(tags)) {
     for (const tagItem of tags) {
       if (!tagItem) continue;
-      const tagName = typeof tagItem === 'string' ? tagItem.trim() : tagItem.name;
-      if (!tagName) continue;
+      const tagName = typeof tagItem === 'string' ? tagItem.trim() : tagItem?.name?.trim();
+      if (!tagName || processedTagNames.has(tagName.toLowerCase())) continue;
+      processedTagNames.add(tagName.toLowerCase());
 
       const tagRecord = await prisma.tag.upsert({
         where: { name: tagName },
@@ -185,8 +205,8 @@ async function createTask(data) {
       endTime: endTime || null,
       status,
       priority,
-      categoryId: categoryId || null,
-      estimatedDuration: calculatedDuration || 0,
+      categoryId: validCategoryId,
+      estimatedDuration: Math.max(0, calculatedDuration || 0),
       isRecurring: Boolean(isRecurring),
       recurrenceType: recurrenceType || 'NONE',
       recurrenceDays: recurrenceDays || null,
@@ -242,7 +262,12 @@ async function updateTask(id, data) {
   }
 
   if (categoryId !== undefined) {
-    updateData.categoryId = categoryId || null;
+    if (categoryId && typeof categoryId === 'string' && categoryId.trim()) {
+      const cat = await prisma.category.findUnique({ where: { id: categoryId.trim() } });
+      updateData.categoryId = cat ? cat.id : null;
+    } else {
+      updateData.categoryId = null;
+    }
   }
 
   if (isRecurring !== undefined) updateData.isRecurring = Boolean(isRecurring);
@@ -253,22 +278,33 @@ async function updateTask(id, data) {
   const effectiveStart = startTime !== undefined ? startTime : existing.startTime;
   const effectiveEnd = endTime !== undefined ? endTime : existing.endTime;
 
+  if (effectiveStart && effectiveEnd) {
+    const [sH, sM] = effectiveStart.split(':').map(Number);
+    const [eH, eM] = effectiveEnd.split(':').map(Number);
+    if (eH * 60 + eM < sH * 60 + sM) {
+      const error = new Error('End time cannot be earlier than start time');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
   if (estimatedDuration !== undefined) {
-    updateData.estimatedDuration = Number(estimatedDuration);
+    updateData.estimatedDuration = Math.max(0, Number(estimatedDuration));
   } else if ((startTime !== undefined || endTime !== undefined) && effectiveStart && effectiveEnd) {
     updateData.estimatedDuration = calculateDurationMinutes(effectiveStart, effectiveEnd);
   }
 
-  // Handle tags update if provided
+  // Handle tags update if provided (deduplicated)
   if (Array.isArray(tags)) {
     // Delete existing task tags
     await prisma.taskTag.deleteMany({ where: { taskId: id } });
 
-    // Link new tags
+    const processedTagNames = new Set();
     for (const tagItem of tags) {
       if (!tagItem) continue;
-      const tagName = typeof tagItem === 'string' ? tagItem.trim() : tagItem.name;
-      if (!tagName) continue;
+      const tagName = typeof tagItem === 'string' ? tagItem.trim() : tagItem?.name?.trim();
+      if (!tagName || processedTagNames.has(tagName.toLowerCase())) continue;
+      processedTagNames.add(tagName.toLowerCase());
 
       const tagRecord = await prisma.tag.upsert({
         where: { name: tagName },
@@ -341,11 +377,18 @@ async function rescheduleTask(id, { date, startTime, endTime }) {
   if (startTime !== undefined) updateData.startTime = startTime || null;
   if (endTime !== undefined) updateData.endTime = endTime || null;
 
-  // If new start & end time provided, recalculate duration
+  // If new start & end time provided, recalculate duration and validate
   const effectiveStart = startTime !== undefined ? startTime : existing.startTime;
   const effectiveEnd = endTime !== undefined ? endTime : existing.endTime;
 
   if (effectiveStart && effectiveEnd) {
+    const [sH, sM] = effectiveStart.split(':').map(Number);
+    const [eH, eM] = effectiveEnd.split(':').map(Number);
+    if (eH * 60 + eM < sH * 60 + sM) {
+      const error = new Error('End time cannot be earlier than start time');
+      error.statusCode = 400;
+      throw error;
+    }
     updateData.estimatedDuration = calculateDurationMinutes(effectiveStart, effectiveEnd);
   }
 

@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { timerApi } from '../services/api';
+import { useTasks } from './TaskContext';
 
 const TimerContext = createContext();
 
 export function TimerProvider({ children, onTimerStopped }) {
+  const { fetchTasks } = useTasks();
   const [activeSession, setActiveSession] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -60,6 +62,7 @@ export function TimerProvider({ children, onTimerStopped }) {
           ...res.data.session,
           task: res.data.task
         });
+        if (fetchTasks) fetchTasks();
       }
       return res.data;
     } catch (err) {
@@ -76,6 +79,7 @@ export function TimerProvider({ children, onTimerStopped }) {
       const res = await timerApi.stopTimer(targetTaskId, notes);
       setActiveSession(null);
       setElapsedSeconds(0);
+      if (fetchTasks) fetchTasks();
       if (onTimerStopped) {
         onTimerStopped(res.data);
       }

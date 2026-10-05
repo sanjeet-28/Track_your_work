@@ -3,6 +3,30 @@
  * Operates on calendar dates ("YYYY-MM-DD") to avoid timezone shift bugs
  */
 
+export function toDateStr(date) {
+  if (!date) return '';
+  if (typeof date === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+    if (date.includes('T')) {
+      const d = new Date(date);
+      if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    }
+    return date.slice(0, 10);
+  }
+  if (date instanceof Date && !isNaN(date.getTime())) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  return '';
+}
+
 export function getTodayDateStr() {
   const d = new Date();
   const year = d.getFullYear();

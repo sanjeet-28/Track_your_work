@@ -121,7 +121,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
               type="button"
               onClick={() => setTheme('system')}
               className={`flex-1 py-1 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-                theme === 'system'
+                theme === 'system' || theme === 'auto'
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs font-semibold'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
@@ -133,7 +133,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
           <button
             type="button"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="w-full py-2 flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+            className="w-full py-2 flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
             title="Toggle theme"
           >
             {theme === 'dark' ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-amber-500" />}

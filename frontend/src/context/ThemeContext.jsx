@@ -4,33 +4,44 @@ const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('trackyourwork_theme') || 'dark';
+    return localStorage.getItem('trackyourwork_theme') || 'system';
+  });
+
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('trackyourwork_theme') || 'system';
+    if (saved === 'dark') return true;
+    if (saved === 'light') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   useEffect(() => {
     const root = document.documentElement;
 
     function applyTheme() {
-      if (theme === 'dark') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const effectiveDark =
+        theme === 'dark' ||
+        ((theme === 'system' || theme === 'auto') && prefersDark);
+
+      if (effectiveDark) {
         root.classList.add('dark');
-      } else if (theme === 'light') {
-        root.classList.remove('dark');
+        root.style.colorScheme = 'dark';
+        setIsDark(true);
       } else {
-        // System preference
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          root.classList.add('dark');
-        } else {
-          root.classList.remove('dark');
-        }
+        root.classList.remove('dark');
+        root.style.colorScheme = 'light';
+        setIsDark(false);
       }
     }
 
     applyTheme();
-    localStorage.setItem('trackyourwork_theme', theme);
+    try {
+      localStorage.setItem('trackyourwork_theme', theme);
+    } catch (e) {
+      console.warn('Failed to save theme in localStorage', e);
+    }
 
-    // If system theme, listen to changes
-    if (theme === 'system') {
+    if (theme === 'system' || theme === 'auto') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const listener = () => applyTheme();
       mediaQuery.addEventListener('change', listener);
@@ -39,7 +50,7 @@ export function ThemeProvider({ children }) {
   }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, isDark }}>
       {children}
     </ThemeContext.Provider>
   );

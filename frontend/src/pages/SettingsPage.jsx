@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Download, Sun, Moon, Monitor, Bell, Sliders, Shield } from 'lucide-react';
+import { Settings as SettingsIcon, Download, Sun, Moon, Monitor, Sliders, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { settingsApi } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { useTasks } from '../context/TaskContext';
@@ -19,26 +19,40 @@ export function SettingsPage() {
     reminderMinutes: 10
   });
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [downloadingJson, setDownloadingJson] = useState(false);
   const [downloadingCsv, setDownloadingCsv] = useState(false);
 
-  useEffect(() => {
-    settingsApi
-      .getSettings()
-      .then((res) => {
-        if (res.data) {
-          setSettings((prev) => ({ ...prev, ...res.data }));
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await settingsApi.getSettings();
+      if (res.data) {
+        setSettings((prev) => ({ ...prev, ...res.data }));
+        if (res.data.theme && res.data.theme !== theme) {
+          setTheme(res.data.theme);
         }
-      })
-      .catch(console.error);
+      }
+    } catch (err) {
+      console.error('Failed to load settings:', err);
+      setError(err.message || 'Failed to load settings from server');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
   }, []);
 
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await settingsApi.updateSettings(settings);
+      await settingsApi.updateSettings({ ...settings, theme });
       showToast('Settings saved successfully');
     } catch (err) {
       showToast(err.message || 'Failed to save settings', 'error');
@@ -65,6 +79,26 @@ export function SettingsPage() {
     }, 500);
   };
 
+  if (loading) {
+    return (
+      <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-200">
+        <div>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <SettingsIcon className="w-6 h-6 text-indigo-500" />
+            <span>Application Settings</span>
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Loading your preferences...
+          </p>
+        </div>
+        <div className="p-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col items-center justify-center space-y-3">
+          <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" />
+          <span className="text-xs text-slate-500 font-medium">Fetching settings...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-200">
       <div>
@@ -76,6 +110,18 @@ export function SettingsPage() {
           Configure appearance, working hours, notifications, and export productivity data
         </p>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+          <Button variant="outline" size="xs" onClick={fetchSettings}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Appearance Section */}
@@ -95,9 +141,9 @@ export function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setTheme('light')}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all ${
+                className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
                   theme === 'light'
-                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 ring-2 ring-indigo-500/20'
+                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
                     : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
@@ -108,9 +154,9 @@ export function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setTheme('dark')}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all ${
+                className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
                   theme === 'dark'
-                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 ring-2 ring-indigo-500/20'
+                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
                     : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
@@ -121,9 +167,9 @@ export function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setTheme('system')}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all ${
-                  theme === 'system'
-                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 ring-2 ring-indigo-500/20'
+                className={`p-3 rounded-xl border flex flex-col items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
+                  theme === 'system' || theme === 'auto'
+                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
                     : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >

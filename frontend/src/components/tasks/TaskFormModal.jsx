@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTasks } from '../../context/TaskContext';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
-import { calculateDurationMinutes } from '../../utils/dateFormats';
+import { calculateDurationMinutes, getTodayDateStr } from '../../utils/dateFormats';
 
 export function TaskFormModal() {
   const { taskModalState, closeTaskModal, createTask, updateTask, categories } = useTasks();
@@ -30,7 +30,7 @@ export function TaskFormModal() {
       setFormData({
         title: task.title || '',
         description: task.description || '',
-        date: task.date || defaultDate,
+        date: task.date || defaultDate || getTodayDateStr(),
         startTime: task.startTime || '',
         endTime: task.endTime || '',
         estimatedDuration: task.estimatedDuration || 60,
@@ -44,7 +44,7 @@ export function TaskFormModal() {
       setFormData({
         title: '',
         description: '',
-        date: defaultDate || new Date().toISOString().split('T')[0],
+        date: defaultDate || getTodayDateStr(),
         startTime: defaultTime || '',
         endTime: '',
         estimatedDuration: 60,
@@ -67,9 +67,14 @@ export function TaskFormModal() {
         const [eH, eM] = updated.endTime.split(':').map(Number);
         const startMins = sH * 60 + sM;
         const endMins = eH * 60 + eM;
-        if (endMins >= startMins) {
+        if (endMins < startMins) {
+          setError('End time cannot be earlier than start time');
+        } else {
+          setError('');
           updated.estimatedDuration = endMins - startMins;
         }
+      } else {
+        setError('');
       }
       return updated;
     });
@@ -80,6 +85,15 @@ export function TaskFormModal() {
     if (!formData.title.trim()) {
       setError('Title is required');
       return;
+    }
+
+    if (formData.startTime && formData.endTime) {
+      const [sH, sM] = formData.startTime.split(':').map(Number);
+      const [eH, eM] = formData.endTime.split(':').map(Number);
+      if (eH * 60 + eM < sH * 60 + sM) {
+        setError('End time cannot be earlier than start time');
+        return;
+      }
     }
 
     setSubmitting(true);

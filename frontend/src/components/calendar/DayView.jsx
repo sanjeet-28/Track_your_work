@@ -1,5 +1,5 @@
 import { useTasks } from '../../context/TaskContext';
-import { formatTime12h, formatDuration, getTodayDateStr } from '../../utils/dateFormats';
+import { formatTime12h, formatDuration, getTodayDateStr, toDateStr } from '../../utils/dateFormats';
 import { TaskCard } from '../tasks/TaskCard';
 import { Button } from '../common/Button';
 import { Plus, Clock } from 'lucide-react';
@@ -9,7 +9,7 @@ const HOUR_HEIGHT = 72; // px per hour
 
 export function DayView({ currentDate }) {
   const { tasks, openTaskModal } = useTasks();
-  const dateStr = currentDate.toISOString().split('T')[0];
+  const dateStr = toDateStr(currentDate);
   const today = getTodayDateStr();
 
   const dayTasks = tasks.filter((t) => t.date === dateStr);

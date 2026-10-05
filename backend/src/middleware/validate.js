@@ -42,6 +42,17 @@ function validateTaskCreate(req, res, next) {
     });
   }
 
+  if (startTime && endTime) {
+    const [sH, sM] = startTime.split(':').map(Number);
+    const [eH, eM] = endTime.split(':').map(Number);
+    if (eH * 60 + eM < sH * 60 + sM) {
+      return res.status(400).json({
+        success: false,
+        error: 'End time cannot be earlier than start time'
+      });
+    }
+  }
+
   if (priority && !VALID_PRIORITIES.includes(priority.toUpperCase())) {
     return res.status(400).json({
       success: false,
@@ -95,6 +106,17 @@ function validateTaskUpdate(req, res, next) {
       success: false,
       error: 'Invalid endTime format. Expected HH:mm (24-hour)'
     });
+  }
+
+  if (startTime && endTime) {
+    const [sH, sM] = startTime.split(':').map(Number);
+    const [eH, eM] = endTime.split(':').map(Number);
+    if (eH * 60 + eM < sH * 60 + sM) {
+      return res.status(400).json({
+        success: false,
+        error: 'End time cannot be earlier than start time'
+      });
+    }
   }
 
   if (priority && !VALID_PRIORITIES.includes(priority.toUpperCase())) {
