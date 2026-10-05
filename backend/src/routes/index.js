@@ -9,11 +9,14 @@ const analyticsRoutes = require('./analyticsRoutes');
 const reviewRoutes = require('./reviewRoutes');
 const settingsRoutes = require('./settingsRoutes');
 const exportRoutes = require('./exportRoutes');
+const courseRoutes = require('./courseRoutes');
 
 router.use('/tasks', taskRoutes);
 router.use('/timer', timerRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/tags', tagRoutes);
+router.use('/courses', courseRoutes);
+router.use('/analytics/courses', courseRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/settings', settingsRoutes);

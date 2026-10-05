@@ -1,8 +1,10 @@
 const prisma = require('../lib/prisma');
 const { getTodayDateStr, calculateDurationMinutes, addDays } = require('../utils/dateUtils');
+const { detectCourseCode, detectTaskType, getTagForTaskType, getCourseColor } = require('../utils/detectionUtils');
 
 const taskInclude = {
   category: true,
+  course: true,
   tags: {
     include: {
       tag: true
@@ -19,6 +21,7 @@ function formatTask(task) {
   if (!task) return null;
   return {
     ...task,
+    course: task.course || null,
     tags: task.tags ? task.tags.map(tt => tt.tag) : []
   };
 }
@@ -31,6 +34,9 @@ async function getTasks(filters = {}) {
     status,
     priority,
     categoryId,
+    courseId,
+    courseCode,
+    taskType,
     tag,
     search,
     sortBy = 'startTime',
@@ -59,6 +65,16 @@ async function getTasks(filters = {}) {
 
   if (categoryId) {
     where.categoryId = categoryId;
+  }
+
+  if (courseId) {
+    where.courseId = courseId;
+  } else if (courseCode) {
+    where.course = { code: courseCode.toUpperCase() };
+  }
+
+  if (taskType) {
+    where.taskType = taskType;
   }
 
   if (tag) {
@@ -143,6 +159,8 @@ async function createTask(data) {
     status = 'TODO',
     priority = 'MEDIUM',
     categoryId,
+    courseId,
+    taskType,
     tags = [], // array of tag names or IDs
     estimatedDuration,
     isRecurring = false,
@@ -174,26 +192,58 @@ async function createTask(data) {
     if (cat) validCategoryId = cat.id;
   }
 
-  // Connect or create tags (deduplicated)
+  // Automatic course detection
+  let finalCourseId = null;
+  const detectedCode = detectCourseCode(title);
+  if (detectedCode) {
+    const courseRecord = await prisma.course.upsert({
+      where: { code: detectedCode },
+      update: {},
+      create: {
+        code: detectedCode,
+        name: detectedCode,
+        color: getCourseColor(detectedCode)
+      }
+    });
+    finalCourseId = courseRecord.id;
+  } else if (courseId && typeof courseId === 'string' && courseId.trim()) {
+    const course = await prisma.course.findUnique({ where: { id: courseId.trim() } });
+    if (course) finalCourseId = course.id;
+  }
+
+  // Automatic task type detection
+  let finalTaskType = taskType || null;
+  const detectedType = detectTaskType(title);
+  if (detectedType) {
+    finalTaskType = detectedType;
+  }
+
+  // Connect or create tags (deduplicated), including detected task type tag
+  const tagsToProcess = Array.isArray(tags) ? [...tags] : [];
+  if (finalTaskType) {
+    const suggestedTag = getTagForTaskType(finalTaskType);
+    if (suggestedTag && !tagsToProcess.some(t => (typeof t === 'string' ? t.toLowerCase() : t?.name?.toLowerCase()) === suggestedTag.toLowerCase())) {
+      tagsToProcess.push(suggestedTag);
+    }
+  }
+
   const taskTagCreates = [];
   const processedTagNames = new Set();
-  if (Array.isArray(tags)) {
-    for (const tagItem of tags) {
-      if (!tagItem) continue;
-      const tagName = typeof tagItem === 'string' ? tagItem.trim() : tagItem?.name?.trim();
-      if (!tagName || processedTagNames.has(tagName.toLowerCase())) continue;
-      processedTagNames.add(tagName.toLowerCase());
+  for (const tagItem of tagsToProcess) {
+    if (!tagItem) continue;
+    const tagName = typeof tagItem === 'string' ? tagItem.trim() : tagItem?.name?.trim();
+    if (!tagName || processedTagNames.has(tagName.toLowerCase())) continue;
+    processedTagNames.add(tagName.toLowerCase());
 
-      const tagRecord = await prisma.tag.upsert({
-        where: { name: tagName },
-        update: {},
-        create: { name: tagName }
-      });
+    const tagRecord = await prisma.tag.upsert({
+      where: { name: tagName },
+      update: {},
+      create: { name: tagName }
+    });
 
-      taskTagCreates.push({
-        tag: { connect: { id: tagRecord.id } }
-      });
-    }
+    taskTagCreates.push({
+      tag: { connect: { id: tagRecord.id } }
+    });
   }
 
   const task = await prisma.task.create({
@@ -206,6 +256,8 @@ async function createTask(data) {
       status,
       priority,
       categoryId: validCategoryId,
+      courseId: finalCourseId,
+      taskType: finalTaskType,
       estimatedDuration: Math.max(0, calculatedDuration || 0),
       isRecurring: Boolean(isRecurring),
       recurrenceType: recurrenceType || 'NONE',
@@ -236,6 +288,8 @@ async function updateTask(id, data) {
     status,
     priority,
     categoryId,
+    courseId,
+    taskType,
     tags,
     estimatedDuration,
     isRecurring,
@@ -245,7 +299,41 @@ async function updateTask(id, data) {
 
   const updateData = {};
 
-  if (title !== undefined) updateData.title = title.trim();
+  if (title !== undefined) {
+    updateData.title = title.trim();
+    // Auto detect course if not explicitly set
+    if (courseId === undefined) {
+      const detectedCode = detectCourseCode(title);
+      if (detectedCode) {
+        const courseRecord = await prisma.course.upsert({
+          where: { code: detectedCode },
+          update: {},
+          create: {
+            code: detectedCode,
+            name: detectedCode,
+            color: getCourseColor(detectedCode)
+          }
+        });
+        updateData.courseId = courseRecord.id;
+      }
+    }
+    // Auto detect taskType if not explicitly set
+    if (taskType === undefined) {
+      const detectedType = detectTaskType(title);
+      if (detectedType) {
+        updateData.taskType = detectedType;
+      }
+    }
+  }
+
+  if (courseId !== undefined) {
+    updateData.courseId = courseId || null;
+  }
+
+  if (taskType !== undefined) {
+    updateData.taskType = taskType || null;
+  }
+
   if (description !== undefined) updateData.description = description ? description.trim() : null;
   if (date !== undefined) updateData.date = date;
   if (startTime !== undefined) updateData.startTime = startTime || null;

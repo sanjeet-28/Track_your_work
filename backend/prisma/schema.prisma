@@ -48,6 +48,10 @@ model Task {
   estimatedDuration Int             @default(0)     // in minutes
   actualDuration    Int             @default(0)     // in minutes (calculated sum of work sessions)
   
+  taskType          String?         @db.VarChar(50)
+  courseId          String?
+  course            Course?         @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  
   // Recurrence
   isRecurring       Boolean         @default(false)
   recurrenceType    RecurrenceType  @default(NONE)
@@ -64,6 +68,8 @@ model Task {
   @@index([status])
   @@index([priority])
   @@index([categoryId])
+  @@index([courseId])
+  @@index([taskType])
 }
 
 model WorkSession {
@@ -138,4 +144,16 @@ model UserSettings {
   enableNotifications  Boolean  @default(true)
   reminderMinutes      Int      @default(10)
   updatedAt            DateTime @updatedAt
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  code        String   @unique @db.VarChar(50) // e.g. "COL333", normalized uppercase
+  name        String?  @db.VarChar(100)
+  color       String   @default("#6366f1") @db.VarChar(20)
+  tasks       Task[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([code])
 }
