@@ -3,7 +3,7 @@ import { Calendar, Plus, ChevronUp, ChevronDown, Sparkles, Clock, Target, Loader
 import { useTasks } from '../../context/TaskContext';
 import { taskApi } from '../../services/api';
 import { getTodayDateStr, addDays } from '../../utils/dateFormats';
-import { TaskCard } from '../tasks/TaskCard';
+import { CalendarTaskCard } from './CalendarTaskCard';
 
 /**
  * Format a YYYY-MM-DD string to "25 November 2026"
@@ -196,24 +196,53 @@ export function DateListCalendar() {
   }, [calendarTasksMap, contextTasks]);
 
   /**
-   * Group tasks by local date string YYYY-MM-DD
+   * Handle task update (e.g. from inline time editing)
+   */
+  const handleTaskUpdated = useCallback((updatedTask) => {
+    if (!updatedTask || !updatedTask.id) return;
+    setCalendarTasksMap((prev) => ({
+      ...prev,
+      [updatedTask.id]: updatedTask
+    }));
+  }, []);
+
+  /**
+   * Group tasks by local date string YYYY-MM-DD into INCOMPLETE and COMPLETED sections,
+   * with both sections sorted by startTime ascending.
    */
   const tasksByDate = useMemo(() => {
     const grouped = {};
     Object.values(effectiveTasksMap).forEach((task) => {
       if (!task || !task.date) return;
-      if (!grouped[task.date]) grouped[task.date] = [];
-      grouped[task.date].push(task);
+      if (!grouped[task.date]) {
+        grouped[task.date] = { incomplete: [], completed: [] };
+      }
+      if (task.status === 'COMPLETED') {
+        grouped[task.date].completed.push(task);
+      } else {
+        grouped[task.date].incomplete.push(task);
+      }
     });
 
-    // Sort tasks on each date by startTime asc
+    const sortByStartTime = (a, b) => {
+      // If one has start time and the other doesn't, tasks with start time come first
+      if (a.startTime && !b.startTime) return -1;
+      if (!a.startTime && b.startTime) return 1;
+      if (a.startTime && b.startTime) {
+        const comp = a.startTime.localeCompare(b.startTime);
+        if (comp !== 0) return comp;
+        if (a.endTime && b.endTime) {
+          const endComp = a.endTime.localeCompare(b.endTime);
+          if (endComp !== 0) return endComp;
+        }
+      }
+      return (a.title || '').localeCompare(b.title || '');
+    };
+
+    // Sort incomplete and completed tasks on each date by startTime asc
     Object.keys(grouped).forEach((dateKey) => {
-      grouped[dateKey].sort((a, b) => {
-        if (!a.startTime && !b.startTime) return 0;
-        if (!a.startTime) return 1;
-        if (!b.startTime) return -1;
-        return a.startTime.localeCompare(b.startTime);
-      });
+      grouped[dateKey].incomplete.sort(sortByStartTime);
+      grouped[dateKey].completed.sort(sortByStartTime);
     });
 
     return grouped;
@@ -330,7 +359,9 @@ export function DateListCalendar() {
         {/* Date Items Stream */}
         <div className="space-y-4">
           {dateList.map((item) => {
-            const dateTasks = tasksByDate[item.dateStr] || [];
+            const dateGroup = tasksByDate[item.dateStr] || { incomplete: [], completed: [] };
+            const { incomplete, completed } = dateGroup;
+            const totalTasks = incomplete.length + completed.length;
             const { full, weekday } = formatDateFull(item.dateStr);
 
             return (
@@ -369,7 +400,7 @@ export function DateListCalendar() {
 
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-medium text-slate-400 hidden sm:inline">
-                      {dateTasks.length} {dateTasks.length === 1 ? 'task' : 'tasks'}
+                      {totalTasks} {totalTasks === 1 ? 'task' : 'tasks'}
                     </span>
                     <button
                       type="button"
@@ -382,18 +413,70 @@ export function DateListCalendar() {
                   </div>
                 </div>
 
-                {/* Tasks List for Date */}
-                {dateTasks.length === 0 ? (
-                  <div className="py-3 px-4 rounded-xl bg-slate-50/60 dark:bg-slate-800/30 border border-dashed border-slate-200 dark:border-slate-800 text-center">
+                {/* Tasks List for Date - Split into INCOMPLETE and COMPLETED */}
+                {totalTasks === 0 ? (
+                  <div className="py-3 px-4 rounded-xl bg-slate-50/60 dark:bg-slate-800/30 border border-dashed border-slate-200 dark:border-slate-800 text-center max-w-2xl">
                     <p className="text-xs italic text-slate-400 dark:text-slate-500">
                       No work scheduled
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2.5">
-                    {dateTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} />
-                    ))}
+                  <div className="space-y-4">
+                    {/* INCOMPLETE SECTION */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          INCOMPLETE
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          {incomplete.length}
+                        </span>
+                      </div>
+
+                      {incomplete.length === 0 ? (
+                        <div className="py-2 px-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-800/50 text-xs text-slate-400 italic max-w-2xl">
+                          No incomplete tasks
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {incomplete.map((task) => (
+                            <CalendarTaskCard
+                              key={task.id}
+                              task={task}
+                              onTimeUpdated={handleTaskUpdated}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* COMPLETED SECTION (Always displayed BELOW incomplete tasks) */}
+                    <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800/60">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                          COMPLETED
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50">
+                          {completed.length}
+                        </span>
+                      </div>
+
+                      {completed.length === 0 ? (
+                        <div className="py-2 px-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-800/50 text-xs text-slate-400 italic max-w-2xl">
+                          No completed tasks
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {completed.map((task) => (
+                            <CalendarTaskCard
+                              key={task.id}
+                              task={task}
+                              onTimeUpdated={handleTaskUpdated}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

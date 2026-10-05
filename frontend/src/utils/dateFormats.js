@@ -80,6 +80,24 @@ export function formatTime12h(timeStr) {
   return `${h12}:${String(minutes).padStart(2, '0')} ${period}`;
 }
 
+export function formatTime12hPadded(timeStr) {
+  if (!timeStr) return '';
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const h12 = hours % 12 || 12;
+  return `${String(h12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${period}`;
+}
+
+export function calculateTimeDifference(startTime, endTime) {
+  if (!startTime || !endTime) return null;
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return null;
+  const diffMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+  if (diffMinutes <= 0) return null;
+  return formatDuration(diffMinutes);
+}
+
 export function calculateDurationMinutes(startTime, endTime) {
   if (!startTime || !endTime) return 0;
   const [startH, startM] = startTime.split(':').map(Number);

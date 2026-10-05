@@ -108,6 +108,12 @@ export function TaskCard({ task, onDragStart }) {
               </span>
             )}
 
+            {isCompleted && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                <Check className="w-3 h-3 stroke-[3]" /> Done
+              </span>
+            )}
+
             {task.isRecurring && (
               <span className="inline-flex items-center text-[10px] text-indigo-500" title="Recurring Task">
                 <Repeat className="w-3 h-3" />
@@ -116,8 +122,8 @@ export function TaskCard({ task, onDragStart }) {
           </div>
 
           <h4
-            className={`text-sm font-semibold text-slate-900 dark:text-white leading-snug truncate ${
-              isCompleted ? 'line-through text-slate-400 dark:text-slate-500' : ''
+            className={`text-sm font-semibold leading-snug truncate ${
+              isCompleted ? 'text-slate-600 dark:text-slate-400' : 'text-slate-900 dark:text-white'
             }`}
           >
             {task.title}

@@ -103,7 +103,7 @@ export function MonthView({ currentDate, onDropTask }) {
                       }}
                       className={`px-1.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer truncate flex items-center gap-1 border ${
                         isCompleted
-                          ? 'bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 line-through border-transparent'
+                          ? 'bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-transparent'
                           : isOverdue
                           ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800'
                           : 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60 hover:border-indigo-400'
